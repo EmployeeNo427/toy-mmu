@@ -13,7 +13,7 @@
 # limitations under the License.
 import datasets
 from datasets import Features, Value, Sequence
-from datasets.data_files import DataFilesPatternsDict
+from datasets.data_files import DataFilesDict
 import h5py
 import numpy as np
 
@@ -21,7 +21,68 @@ import numpy as np
 _CITATION = r"""% CITATION
 @misc{desicollaboration2025datarelease1dark,
       title={Data Release 1 of the Dark Energy Spectroscopic Instrument}, 
-      author={DESI Collaboration and M. Abdul-Karim and A. G. Adame and D. Aguado and J. Aguilar and S. Ahlen and S. Alam and G. Aldering and D. M. Alexander and R. Alfarsy and L. Allen and C. Allende Prieto and O. Alves and A. Anand and U. Andrade and E. Armengaud and S. Avila and A. Aviles and H. Awan and S. Bailey and A. Baleato Lizancos and O. Ballester and A. Bault and J. Bautista and S. BenZvi and L. Beraldo e Silva and J. R. Bermejo-Climent and F. Beutler and D. Bianchi and C. Blake and R. Blum and A. S. Bolton and M. Bonici and S. Brieden and A. Brodzeller and D. Brooks and E. Buckley-Geer and E. Burtin and R. Canning and A. Carnero Rosell and A. Carr and P. Carrilho and L. Casas and F. J. Castander and R. Cereskaite and J. L. Cervantes-Cota and E. Chaussidon and J. Chaves-Montero and S. Chen and X. Chen and T. Claybaugh and S. Cole and A. P. Cooper and M. -C. Cousinou and A. Cuceu and T. M. Davis and K. S. Dawson and R. de Belsunce and R. de la Cruz and A. de la Macorra and A. de Mattia and N. Deiosso and J. Della Costa and R. Demina and U. Demirbozan and J. DeRose and A. Dey and B. Dey and J. Ding and Z. Ding and P. Doel and K. Douglass and M. Dowicz and H. Ebina and J. Edelstein and D. J. Eisenstein and W. Elbers and N. Emas and S. Escoffier and P. Fagrelius and X. Fan and K. Fanning and V. A. Fawcett and E. Fernández-García and S. Ferraro and N. Findlay and A. Font-Ribera and J. E. Forero-Romero and D. Forero-Sánchez and C. S. Frenk and B. T. Gänsicke and L. Galbany and J. García-Bellido and C. Garcia-Quintero and L. H. Garrison and E. Gaztañaga and H. Gil-Marín and O. Y. Gnedin and S. Gontcho A Gontcho and A. X. Gonzalez-Morales and V. Gonzalez-Perez and C. Gordon and O. Graur and D. Green and D. Gruen and R. Gsponer and C. Guandalin and G. Gutierrez and J. Guy and C. Hahn and J. J. Han and J. Han and S. He and H. K. Herrera-Alcantar and K. Honscheid and J. Hou and C. Howlett and D. Huterer and V. Iršič and M. Ishak and A. Jacques and J. Jimenez and Y. P. Jing and B. Joachimi and S. Joudaki and R. Joyce and E. Jullo and S. Juneau and N. G. Karaçaylı and T. Karim and R. Kehoe and S. Kent and A. Khederlarian and D. Kirkby and T. Kisner and F. -S. Kitaura and N. Kizhuprakkat and H. Kong and S. E. Koposov and A. Kremin and A. Krolewski and O. Lahav and Y. Lai and C. Lamman and T. -W. Lan and M. Landriau and D. Lang and J. U. Lange and J. Lasker and J. M. Le Goff and L. Le Guillou and A. Leauthaud and M. E. Levi and S. Li and T. S. Li and K. Lodha and M. Lokken and Y. Luo and C. Magneville and M. Manera and C. J. Manser and D. Margala and P. Martini and M. Maus and J. McCullough and P. McDonald and G. E. Medina and L. Medina-Varela and A. Meisner and J. Mena-Fernández and A. Menegas and M. Mezcua and R. Miquel and P. Montero-Camacho and J. Moon and J. Moustakas and A. Muñoz-Gutiérrez and D. Muñoz-Santos and A. D. Myers and J. Myles and S. Nadathur and J. Najita and L. Napolitano and J. A. Newman and F. Nikakhtar and R. Nikutta and G. Niz and H. E. Noriega and N. Padmanabhan and E. Paillas and N. Palanque-Delabrouille and A. Palmese and J. Pan and Z. Pan and D. Parkinson and J. Peacock and W. J. Percival and A. Pérez-Fernández and I. Pérez-Ràfols and P. Peterson and J. Piat and M. M. Pieri and M. Pinon and C. Poppett and A. Porredon and F. Prada and R. Pucha and F. Qin and D. Rabinowitz and A. Raichoor and C. Ramírez-Pérez and S. Ramirez-Solano and M. Rashkovetskyi and C. Ravoux and A. H. Riley and A. Rocher and C. Rockosi and J. Rohlf and A. J. Ross and G. Rossi and R. Ruggeri and V. Ruhlmann-Kleider and C. G. Sabiu and K. Said and A. Saintonge and L. Samushia and E. Sanchez and N. Sanders and C. Saulder and E. F. Schlafly and D. Schlegel and D. Scholte and M. Schubnell and H. Seo and A. Shafieloo and R. Sharples and J. Silber and M. Siudek and A. Smith and D. Sprayberry and J. Suárez-Pérez and J. Swanson and T. Tan and G. Tarlé and P. Taylor and G. Thomas and R. Tojeiro and R. J. Turner and W. Turner and L. A. Ureña-López and R. Vaisakh and M. Valluri and M. Vargas-Magaña and L. Verde and M. Walther and B. Wang and M. S. Wang and W. Wang and B. A. Weaver and N. Weaverdyck and R. H. Wechsler and M. White and M. Wolfson and J. Yang and C. Yèche and S. Youles and J. Yu and S. Yuan and E. A. Zaborowski and P. Zarrouk and H. Zhang and C. Zhao and R. Zhao and Z. Zheng and R. Zhou and H. Zou and S. Zou and Y. Zu},
+      author={DESI Collaboration and M. Abdul-Karim and A. G. Adame and D.
+      Aguado and J. Aguilar and S. Ahlen and S. Alam and G. Aldering and D. M.
+      Alexander and R. Alfarsy and L. Allen and C. Allende Prieto and O. Alves
+      and A. Anand and U. Andrade and E. Armengaud and S. Avila and A. Aviles
+      and H. Awan and S. Bailey and A. Baleato Lizancos and O. Ballester and A.
+      Bault and J. Bautista and S. BenZvi and L. Beraldo e Silva and J. R.
+      Bermejo-Climent and F. Beutler and D. Bianchi and C. Blake and R. Blum
+      and A. S. Bolton and M. Bonici and S. Brieden and A. Brodzeller and D.
+      Brooks and E. Buckley-Geer and E. Burtin and R. Canning and A. Carnero
+      Rosell and A. Carr and P. Carrilho and L. Casas and F. J. Castander and
+      R. Cereskaite and J. L. Cervantes-Cota and E. Chaussidon and J.
+      Chaves-Montero and S. Chen and X. Chen and T. Claybaugh and S. Cole and
+      A. P. Cooper and M. -C. Cousinou and A. Cuceu and T. M. Davis and K. S.
+      Dawson and R. de Belsunce and R. de la Cruz and A. de la Macorra and A.
+      de Mattia and N. Deiosso and J. Della Costa and R. Demina and U.
+      Demirbozan and J. DeRose and A. Dey and B. Dey and J. Ding and Z. Ding
+      and P. Doel and K. Douglass and M. Dowicz and H. Ebina and J. Edelstein
+      and D. J. Eisenstein and W. Elbers and N. Emas and S. Escoffier and P.
+      Fagrelius and X. Fan and K. Fanning and V. A. Fawcett and E.
+      Fernández-García and S. Ferraro and N. Findlay and A. Font-Ribera and J.
+      E. Forero-Romero and D. Forero-Sánchez and C. S. Frenk and B. T. Gänsicke
+      and L. Galbany and J. García-Bellido and C. Garcia-Quintero and L. H.
+      Garrison and E. Gaztañaga and H. Gil-Marín and O. Y. Gnedin and S.
+      Gontcho A Gontcho and A. X. Gonzalez-Morales and V. Gonzalez-Perez and C.
+      Gordon and O. Graur and D. Green and D. Gruen and R. Gsponer and C.
+      Guandalin and G. Gutierrez and J. Guy and C. Hahn and J. J. Han and J.
+      Han and S. He and H. K. Herrera-Alcantar and K. Honscheid and J. Hou and
+      C. Howlett and D. Huterer and V. Iršič and M. Ishak and A. Jacques and J.
+      Jimenez and Y. P. Jing and B. Joachimi and S. Joudaki and R. Joyce and E.
+      Jullo and S. Juneau and N. G. Karaçaylı and T. Karim and R. Kehoe and S.
+      Kent and A. Khederlarian and D. Kirkby and T. Kisner and F. -S. Kitaura
+      and N. Kizhuprakkat and H. Kong and S. E. Koposov and A. Kremin and A.
+      Krolewski and O. Lahav and Y. Lai and C. Lamman and T. -W. Lan and M.
+      Landriau and D. Lang and J. U. Lange and J. Lasker and J. M. Le Goff and
+      L. Le Guillou and A. Leauthaud and M. E. Levi and S. Li and T. S. Li and
+      K. Lodha and M. Lokken and Y. Luo and C. Magneville and M. Manera and C.
+      J. Manser and D. Margala and P. Martini and M. Maus and J. McCullough and
+      P. McDonald and G. E. Medina and L. Medina-Varela and A. Meisner and J.
+      Mena-Fernandez and A. Menegas and M. Mezcua and R. Miquel and P.
+      Montero-Camacho and J. Moon and J. Moustakas and A. Muñoz-Gutiérrez and
+      D. Munoz-Santos and A. D. Myers and J. Myles and S. Nadathur and J.
+      Najita and L. Napolitano and J. A. Newman and F. Nikakhtar and R. Nikutta
+      and G. Niz and H. E. Noriega and N. Padmanabhan and E. Paillas and N.
+      Palanque-Delabrouille and A. Palmese and J. Pan and Z. Pan and D.
+      Parkinson and J. Peacock and W. J. Percival and A. Pérez-Fernández and I.
+      Pérez-Ràfols and P. Peterson and J. Piat and M. M. Pieri and M. Pinon and
+      C. Poppett and A. Porredon and F. Prada and R. Pucha and F. Qin and D.
+      Rabinowitz and A. Raichoor and C. Ramírez-Pérez and S. Ramirez-Solano and
+      M. Rashkovetskyi and C. Ravoux and A. H. Riley and A. Rocher and C.
+      Rockosi and J. Rohlf and A. J. Ross and G. Rossi and R. Ruggeri and V.
+      Ruhlmann-Kleider and C. G. Sabiu and K. Said and A. Saintonge and L.
+      Samushia and E. Sanchez and N. Sanders and C. Saulder and E. F. Schlafly
+      and D. Schlegel and D. Scholte and M. Schubnell and H. Seo and A.
+      Shafieloo and R. Sharples and J. Silber and M. Siudek and A. Smith and D.
+      Sprayberry and J. Suárez-Pérez and J. Swanson and T. Tan and G. Tarlé and
+      P. Taylor and G. Thomas and R. Tojeiro and R. J. Turner and W. Turner and
+      L. A. Ureña-López and R. Vaisakh and M. Valluri and M. Vargas-Magaña and
+      L. Verde and M. Walther and B. Wang and M. S. Wang and W. Wang and B. A.
+      Weaver and N. Weaverdyck and R. H. Wechsler and M. White and M. Wolfson
+      and J. Yang and C. Yèche and S. Youles and J. Yu and S. Yuan and E. A.
+      Zaborowski and P. Zarrouk and H. Zhang and C. Zhao and R. Zhao and Z.
+      Zheng and R. Zhou and H. Zou and S. Zou and Y. Zu},
       year={2025},
       eprint={2503.14745},
       archivePrefix={arXiv},
@@ -88,8 +149,8 @@ class DESI(datasets.GeneratorBasedBuilder):
         datasets.BuilderConfig(
             name="dr1_main",
             version=VERSION,
-            data_files=DataFilesPatternsDict.from_patterns(
-                {"train": ["dr1_main/healpix=*/*.hdf5"]}
+            data_files=DataFilesDict.from_patterns(
+                {"train": ["dr1_main/healpix=*/*.hdf5"]},
             ),
             description="DESI DR1 main sample.",
         ),
@@ -99,7 +160,6 @@ class DESI(datasets.GeneratorBasedBuilder):
 
     _spectrum_length = 7781
 
-    @classmethod
     def _info(self):
         """Defines the features available in this dataset."""
         # Starting with all features common to image datasets
@@ -163,16 +223,16 @@ class DESI(datasets.GeneratorBasedBuilder):
                     # Parse spectrum data
                     example = {
                         "spectrum": {
-                            "flux": data["spectrum_flux"][i],
-                            "ivar": data["spectrum_ivar"][i],
-                            "lsf_sigma": data["spectrum_lsf_sigma"][i],
-                            "lambda": data["spectrum_lambda"][i],
-                            "mask": data["spectrum_mask"][i],
+                            "flux": data["spectrum_flux"][i].tolist(),
+                            "ivar": data["spectrum_ivar"][i].tolist(),
+                            "lsf_sigma": data["spectrum_lsf_sigma"][i].tolist(),
+                            "lambda": data["spectrum_lambda"][i].tolist(),
+                            "mask": data["spectrum_mask"][i].tolist(),
                         }
                     }
                     # Add all other requested features
                     for f in _FLOAT_FEATURES:
-                        example[f] = data[f][i].astype("float32")
+                        example[f] = float(data[f][i])
 
                     # Add all boolean flags
                     for f in _BOOL_FEATURES:
