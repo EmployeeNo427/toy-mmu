@@ -122,7 +122,7 @@ def main(argv=None):
 
     # with Client(n_workers=8, threads_per_worker=1) as client:
     # Debug mode: use 1 worker and 1 thread for easier debugging with breakpoints
-    import ipdb; ipdb.set_trace(context=20)
+    # import ipdb; ipdb.set_trace(context=20)
     with Client(n_workers=1, threads_per_worker=1, processes=False) as client:
         print(f"Dask dashboard: {client.dashboard_link}")
         pipeline_with_client(import_args, client)
