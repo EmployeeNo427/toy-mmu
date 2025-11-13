@@ -27,3 +27,10 @@ uvx --from huggingface-hub hf upload-large-folder \
 ```
 
 Here is an example of the result dataset: https://huggingface.co/datasets/LSDB/mmu_sdss_sdss/tree/main
+
+
+# Verification of a tranformation class
+There is an example implemenation for sdss. For data generation do:
+ - `uv run --with-requirements=verification/requirements.in python verification/process_using_datasets.py`, this will install datasets==3.6 and run the processing using datasets
+ - then run `python catalog_functions/sdss_transformer.py`
+- afterwards make sure that these two match: `python verification/compare.py`

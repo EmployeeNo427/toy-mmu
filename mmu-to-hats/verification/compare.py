@@ -4,7 +4,7 @@ import pyarrow.compute as pc
 from datasets import load_from_disk
 
 # Load both tables
-transformed_table = pq.read_table("data/transformed_table_vectorized.parquet")
+transformed_table = pq.read_table("data/transformed_table_class.parquet")
 datasets_dataset = load_from_disk("data/MultimodalUniverse/v1/sdss_with_coordinates")
 datasets_table = datasets_dataset.data.table  # Get the underlying Arrow table
 
