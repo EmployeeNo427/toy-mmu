@@ -101,8 +101,6 @@ class SDSSTransformer(BaseTransformer):
         spectrum_lambda = data["spectrum_lambda"][:]
         spectrum_mask = data["spectrum_mask"][:]
 
-        # todo: maybe we can optimize this further by avoiding list comprehensions
-        # potentially simply using pa.array(spectrum_flux) then converting to float?
         spectrum_arrays = [
             np_to_pyarrow_array(spectrum_flux),
             np_to_pyarrow_array(spectrum_ivar),
@@ -152,19 +150,6 @@ class SDSSTransformer(BaseTransformer):
 
         return table
 
-    @classmethod
-    def transform_from_hdf5(cls, hdf5_file_path):
-        """
-        Transform HDF5 file to PyArrow table.
-
-        Args:
-            hdf5_file_path: Path to HDF5 file
-
-        Returns:
-            pa.Table: Transformed Arrow table
-        """
-        with h5py.File(hdf5_file_path, "r") as data:
-            return cls.dataset_to_table(data)
 
 
 # just here for testing purposes, can be used to another file to separate prod and test code
