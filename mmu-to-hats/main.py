@@ -1,6 +1,7 @@
 # for fast debugging run:
 #  python ./main.py   --input=https://users.flatironinstitute.org/~polymathic/data/MultimodalUniverse/v1/sdss/sdss/healpix=583/   --output=./hats   --name=mmu_sdss_sdss   --tmp-dir=./tmp   --max-rows=8192
 import argparse
+import logging
 import math
 from multiprocessing import cpu_count
 
@@ -14,6 +15,13 @@ from hats_import.pipeline import pipeline_with_client
 from upath import UPath
 
 from catalog_functions.sdss_transformer import SDSSTransformer
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def parse_args(argv):
     parser = argparse.ArgumentParser("Convert MMU dataset to HATS")
@@ -49,6 +57,11 @@ def parse_args(argv):
         default=None,
         type=int,
         help="First N files only, useful for debugging",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode (single worker, single thread, no separate processes)",
     )
     return parser.parse_args(argv)
 
@@ -139,10 +152,18 @@ def main(argv=None):
         .add_margin(margin_threshold=10.0, is_default=True)
     )
 
-    # Debug mode: use 1 worker and 1 thread for easier debugging with breakpoints
-    # with Client(n_workers=1, threads_per_worker=1, processes=False) as client:
-    with Client(n_workers=min(8, cpu_count()), threads_per_worker=1) as client:
-        print(f"Dask dashboard: {client.dashboard_link}")
+    # Choose Client configuration based on debug flag
+    if cmd_args.debug:
+        # Debug mode: use 1 worker and 1 thread for easier debugging with breakpoints
+        client_kwargs = {"n_workers": 1, "threads_per_worker": 1, "processes": False}
+        logger.info("Running in DEBUG mode (single worker, single thread, no separate processes)")
+    else:
+        # Production mode: use multiple workers
+        client_kwargs = {"n_workers": min(8, cpu_count()), "threads_per_worker": 1}
+        logger.info(f"Running in PRODUCTION mode ({client_kwargs['n_workers']} workers)")
+
+    with Client(**client_kwargs) as client:
+        logger.info(f"Dask dashboard: {client.dashboard_link}")
         pipeline_with_client(import_args, client)
 
 

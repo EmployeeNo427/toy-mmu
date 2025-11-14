@@ -1,7 +1,6 @@
 """
 SDSSTransformer: Clean class-based transformation from HDF5 to PyArrow tables.
 """
-import h5py
 import pyarrow as pa
 import numpy as np
 from catalog_functions.utils import np_to_pyarrow_array
@@ -42,8 +41,7 @@ class SDSSTransformer(BaseTransformer):
 
     FLUX_FILTERS = ['U', 'G', 'R', 'I', 'Z']
 
-    @classmethod
-    def create_schema(cls):
+    def create_schema(self):
         """Create the output PyArrow schema."""
         fields = []
 
@@ -58,21 +56,21 @@ class SDSSTransformer(BaseTransformer):
         fields.append(pa.field("spectrum", spectrum_struct))
 
         # Add all feature types
-        for f in cls.FLOAT_FEATURES:
+        for f in self.FLOAT_FEATURES:
             fields.append(pa.field(f, pa.float32()))
 
-        for f in cls.DOUBLE_FEATURES:
+        for f in self.DOUBLE_FEATURES:
             fields.append(pa.field(f, pa.float64()))
 
-        for f in cls.INT64_FEATURES:
+        for f in self.INT64_FEATURES:
             fields.append(pa.field(f, pa.int64()))
 
-        for f in cls.BOOL_FEATURES:
+        for f in self.BOOL_FEATURES:
             fields.append(pa.field(f, pa.bool_()))
 
         # Flux features split by filter
-        for f in cls.FLUX_FEATURES:
-            for b in cls.FLUX_FILTERS:
+        for f in self.FLUX_FEATURES:
+            for b in self.FLUX_FILTERS:
                 fields.append(pa.field(f"{f}_{b}", pa.float32()))
 
         # Object ID
@@ -80,8 +78,7 @@ class SDSSTransformer(BaseTransformer):
 
         return pa.schema(fields)
 
-    @classmethod
-    def dataset_to_table(cls, data):
+    def dataset_to_table(self, data):
         """
         Convert HDF5 dataset to PyArrow table.
 
@@ -115,25 +112,25 @@ class SDSSTransformer(BaseTransformer):
         )
 
         # 2. Add float features
-        for f in cls.FLOAT_FEATURES:
+        for f in self.FLOAT_FEATURES:
             columns[f] = pa.array(data[f][:].astype(np.float32))
 
         # 3. Add double features
-        for f in cls.DOUBLE_FEATURES:
+        for f in self.DOUBLE_FEATURES:
             columns[f] = pa.array(data[f][:].astype(np.float64))
 
         # 4. Add int64 features
-        for f in cls.INT64_FEATURES:
+        for f in self.INT64_FEATURES:
             columns[f] = pa.array(data[f][:].astype(np.int64))
 
         # 5. Add boolean features
-        for f in cls.BOOL_FEATURES:
+        for f in self.BOOL_FEATURES:
             columns[f] = pa.array(data[f][:].astype(bool))
 
         # 6. Split flux features by filter (vectorized)
-        for f in cls.FLUX_FEATURES:
+        for f in self.FLUX_FEATURES:
             flux_data = data[f][:]  # Shape: [n_objects, 5]
-            for n, b in enumerate(cls.FLUX_FILTERS):
+            for n, b in enumerate(self.FLUX_FILTERS):
                 # Extract column n for all objects
                 columns[f"{f}_{b}"] = pa.array(
                     flux_data[:, n].astype(np.float32)
@@ -145,7 +142,7 @@ class SDSSTransformer(BaseTransformer):
         )
 
         # Create table with schema
-        schema = cls.create_schema()
+        schema = self.create_schema()
         table = pa.table(columns, schema=schema)
 
         return table
