@@ -6,10 +6,7 @@ from typing import Union
 from catalog_functions.utils import np_to_pyarrow_array
 from abc import ABC, abstractmethod
 
-try:
-    from upath import UPath
-except ImportError:
-    UPath = None
+from upath import UPath
 
 
 class BaseTransformer(ABC):
