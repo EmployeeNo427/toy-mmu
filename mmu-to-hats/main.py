@@ -85,7 +85,7 @@ class MMUReader(InputReader):
     def __init__(self, chunk_mb: float, transform_klass):
         super().__init__()
         self.chunk_bytes = chunk_mb * 1024 * 1024
-        self.transform_klass = transform_klass
+        self.transform = transform_klass()
 
     def _num_chunks(
         self, file_obj, h5_file: h5py.File, columns: list[str] | None
@@ -116,7 +116,7 @@ class MMUReader(InputReader):
                         col: h5_file[col][i : i + chunk_size]
                         for col in read_columns
                     }
-                    table = self.transform_klass.dataset_to_table(data)
+                    table = self.transform.dataset_to_table(data)
                     yield table
 
 
