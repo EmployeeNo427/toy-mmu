@@ -42,6 +42,9 @@ Note that we need to return a `pyarrow.Table` with exactly the same output as th
  - verification/download_sdss.sh
  - process_sdss_using_datasets.py
 
+Please note, that most of the classes are vibe-coded, and not verified yet.
+The only verified transformation class is SDSS.
+
 # Verification of a transformation class
 There is an example implemenation for sdss. For data generation do:
  - `uv run --with-requirements=verification/requirements.in python verification/process_sdss_using_datasets.py`, this will install datasets==3.6 and run the processing using datasets, no need to create another venv. Note that you'll need numpy>1 for the other jobs, so it is not feasible to install from `verification/requirements.in` in your working virtualenv
