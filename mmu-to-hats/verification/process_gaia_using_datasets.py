@@ -6,6 +6,6 @@ from datasets import load_dataset_builder
 gaia = load_dataset_builder("data/MultimodalUniverse/v1/gaia", trust_remote_code=True)
 gaia.download_and_prepare()
 
-# Gaia already has ra, dec, healpix in the HDF5 files, no need to match from catalog
+# Gaia HDF5 files already contain ra, dec, healpix - no catalog join needed (unlike other datasets)
 gaia_train = gaia.as_dataset(split="train")
 gaia_train.save_to_disk("data/MultimodalUniverse/v1/gaia_with_coordinates")

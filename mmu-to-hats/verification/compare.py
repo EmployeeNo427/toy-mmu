@@ -15,6 +15,7 @@ def flatten_struct_columns(table):
         col_type = table.schema.field(col_name).type
 
         if pa.types.is_struct(col_type):
+            # combine_chunks() + field(i) is zero-copy, unlike to_pylist()
             struct_col = col.combine_chunks()
             for i, field in enumerate(col_type):
                 if field.name not in new_columns:
@@ -109,6 +110,7 @@ def compare_tables(table1, table2, label1="Table 1", label2="Table 2"):
                 col2 = table2_sorted[col_name]
 
                 col_type = table1_sorted.schema.field(col_name).type
+                # Structs are flattened, but list columns remain nested
                 if pa.types.is_nested(col_type):
                     columns_equal = col1.combine_chunks().to_pylist() == col2.combine_chunks().to_pylist()
                 elif pa.types.is_floating(col_type):
