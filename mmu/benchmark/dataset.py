@@ -1,12 +1,12 @@
 # This module contains the Lightning dataset wrapper to easily access MMU datasets.
 import torch
 import lightning as L
-import datasets 
+import datasets
 from torch.utils.data import DataLoader
 import typing as T
 import os
 
-from mmu.utils import cross_match_datasets
+from mmu.utils import cross_match_datasets, load_dataset_builder_from_path, load_dataset_from_path
 
 class MMU(L.LightningDataModule):
     def __init__(
@@ -28,8 +28,10 @@ class MMU(L.LightningDataModule):
         if self.hparams.local_mmu_root is not None:
             dataset_path = os.path.join(self.hparams.local_mmu_root, self.hparams.name)
             try:
-                dset = datasets.load_dataset(dataset_path, trust_remote_code=True)
-            except ValueError:
+                # Try loading from local script using new helper (datasets 4.x compatible)
+                dset = load_dataset_from_path(dataset_path)
+            except (FileNotFoundError, ValueError):
+                # Fall back to loading from disk (pre-processed datasets)
                 dset = datasets.load_from_disk(dataset_path)
         else:
             dset = datasets.load_dataset(self.hparams.name)
@@ -85,11 +87,12 @@ class CrossMatchedMMU(L.LightningDataModule):
         left_path = os.path.join(self.hparams.local_mmu_root, self.hparams.left)
         right_path = os.path.join(self.hparams.local_mmu_root, self.hparams.right)
 
-        # Build the cross-matched dataset
-        left = datasets.load_dataset_builder(left_path, trust_remote_code=True)
-        right = datasets.load_dataset_builder(right_path, 
-                                              name=self.hparams.right_config_name if self.hparams.right_config_name is not None else None,
-                                              trust_remote_code=True)
+        # Build the cross-matched dataset using new helper (datasets 4.x compatible)
+        left = load_dataset_builder_from_path(left_path)
+        right = load_dataset_builder_from_path(
+            right_path,
+            config_name=self.hparams.right_config_name
+        )
         if self.hparams.left_config_name is not None:
             configs = [self.hparams.left_config_name]
         else:
@@ -104,7 +107,7 @@ class CrossMatchedMMU(L.LightningDataModule):
         dsets = []
         for i, config in enumerate(configs):
             print("Processing config from left dataset: ", config)
-            left = datasets.load_dataset_builder(left_path, config, trust_remote_code=True)
+            left = load_dataset_builder_from_path(left_path, config_name=config)
             dset = cross_match_datasets(
                 left,
                 right,

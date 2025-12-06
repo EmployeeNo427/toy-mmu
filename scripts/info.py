@@ -2,8 +2,11 @@ import argparse
 import os
 from pathlib import Path
 from typing import List
-from datasets import load_dataset_builder
 import sys
+
+# Add parent directory to path to import mmu utils
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from mmu.utils import load_dataset_builder_from_path
 
 INFO_KEYS = ['citation', 'description', 'homepage', 'license', 'version', 'acknowledgements']
 
@@ -17,16 +20,15 @@ def get_all_datasets() -> List[str]:
     return sorted(list(all_datasets))
 
 def load_dataset_builder_safely(script_path: Path):
-    """Safely load a dataset builder from a script path."""
+    """Safely load a dataset builder from a script path.
+
+    Uses the new load_dataset_builder_from_path helper which is compatible
+    with datasets 4.x (which removed trust_remote_code support).
+    """
     if not script_path.exists():
         raise FileNotFoundError(f"Dataset script not found: {script_path}")
-        
-    sys.path.insert(0, str(script_path.parent))
-    try:
-        builder = load_dataset_builder(str(script_path), trust_remote_code=True)
-    finally:
-        sys.path.pop(0)
-    return builder
+
+    return load_dataset_builder_from_path(script_path)
 
 def extract_acknowledgements(citation: str) -> str:
     """Extract acknowledgements from citation text if present."""

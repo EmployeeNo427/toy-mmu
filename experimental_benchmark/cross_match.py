@@ -1,13 +1,13 @@
 import os
 import argparse
 import datasets
-from mmu.utils import cross_match_datasets
+from mmu.utils import cross_match_datasets, load_dataset_builder_from_path
 
 
 def cross_match(
-    left_path: str, 
-    right_path: str, 
-    cache_dir: str, 
+    left_path: str,
+    right_path: str,
+    cache_dir: str,
     local_mmu_root: str = None,
     matching_radius: float = 1.0, # in arcseconds
     num_proc: int = 1,
@@ -17,9 +17,9 @@ def cross_match(
         left_path = os.path.join(local_mmu_root, left_path)
         right_path = os.path.join(local_mmu_root, right_path)
 
-    # Load datasets
-    left = datasets.load_dataset_builder(left_path, trust_remote_code=True)
-    right = datasets.load_dataset_builder(right_path, trust_remote_code=True)
+    # Load datasets using new helper (datasets 4.x compatible)
+    left = load_dataset_builder_from_path(left_path)
+    right = load_dataset_builder_from_path(right_path)
 
     print(f'Cross-matching datasets with matching radius {matching_radius} arcseconds...')
 

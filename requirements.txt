@@ -1,4 +1,4 @@
-datasets
+datasets>=4.0.0
 astropy
 h5py
 pandas

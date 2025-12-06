@@ -1,15 +1,226 @@
 import os
-from datasets import DatasetBuilder, Dataset
+import sys
+import importlib.util
+from pathlib import Path
+from datasets import DatasetBuilder, Dataset, GeneratorBasedBuilder
+from datasets.features import Sequence as SequenceFeature
 from astropy.table import Table, hstack, vstack
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from typing import List
+from typing import List, Optional, Union
 from functools import partial
 from multiprocessing import Pool
 import numpy as np
 import h5py
 import pandas as pd
 from astropy import units
+
+
+def _find_builder_class(module):
+    """Find the GeneratorBasedBuilder subclass in a module.
+
+    Args:
+        module: A Python module object.
+
+    Returns:
+        The GeneratorBasedBuilder subclass found in the module.
+
+    Raises:
+        ValueError: If no GeneratorBasedBuilder subclass is found.
+    """
+    for name in dir(module):
+        obj = getattr(module, name)
+        if (isinstance(obj, type) and
+            issubclass(obj, GeneratorBasedBuilder) and
+            obj is not GeneratorBasedBuilder):
+            return obj
+    raise ValueError(f"No GeneratorBasedBuilder subclass found in module {module.__name__}")
+
+
+def _convert_sequence_to_list(features):
+    """Convert deprecated Sequence features to List features for datasets 4.x compatibility.
+
+    In datasets 4.x, the Sequence type was replaced with List. This function
+    recursively converts any Sequence features to their List equivalents.
+
+    Args:
+        features: A Features object or dict-like containing feature definitions.
+
+    Returns:
+        The features with Sequence types converted to List types.
+    """
+    from datasets import Features, Value
+    try:
+        from datasets.features import List as ListFeature
+    except ImportError:
+        # datasets < 4.0 doesn't have List, use Sequence
+        return features
+
+    if features is None:
+        return None
+
+    converted = {}
+    for key, value in features.items():
+        if isinstance(value, SequenceFeature):
+            # Convert Sequence to List
+            inner_feature = value.feature
+            if isinstance(inner_feature, dict):
+                # Nested dict inside Sequence -> convert recursively
+                inner_feature = _convert_sequence_to_list(Features(inner_feature))
+            converted[key] = ListFeature(inner_feature)
+        elif isinstance(value, dict):
+            # Recursively convert nested dicts
+            converted[key] = _convert_sequence_to_list(value)
+        elif hasattr(value, 'items'):
+            # Features-like object
+            converted[key] = _convert_sequence_to_list(value)
+        else:
+            converted[key] = value
+
+    return Features(converted) if isinstance(features, Features) else converted
+
+
+def load_dataset_builder_from_path(
+    path: Union[str, Path],
+    config_name: Optional[str] = None,
+    **kwargs
+) -> DatasetBuilder:
+    """Load a dataset builder from a local path containing a dataset script.
+
+    This function dynamically imports the dataset script and instantiates
+    the builder class. This is the recommended way to load local datasets
+    in datasets 4.x, which removed support for trust_remote_code.
+
+    Args:
+        path: Path to the directory containing the dataset script, or path
+            to the script file itself. If a directory is provided, the script
+            should be named {directory_name}.py.
+        config_name: Optional name of the builder configuration to use.
+            If None, uses the default configuration.
+        **kwargs: Additional keyword arguments passed to the builder constructor.
+
+    Returns:
+        An instantiated DatasetBuilder object.
+
+    Raises:
+        FileNotFoundError: If the dataset script is not found.
+        ValueError: If no GeneratorBasedBuilder subclass is found in the script.
+
+    Example:
+        >>> builder = load_dataset_builder_from_path("scripts/plasticc")
+        >>> builder.download_and_prepare()
+        >>> dataset = builder.as_dataset()
+    """
+    path = Path(path)
+
+    # Find the script file
+    if path.is_file() and path.suffix == '.py':
+        script_path = path
+        base_path = path.parent
+    elif path.is_dir():
+        # Look for a .py file with the same name as the directory
+        script_path = path / f"{path.name}.py"
+        if not script_path.exists():
+            # Try looking for any .py file
+            py_files = list(path.glob("*.py"))
+            if len(py_files) == 1:
+                script_path = py_files[0]
+            elif len(py_files) == 0:
+                raise FileNotFoundError(f"No Python script found in {path}")
+            else:
+                raise FileNotFoundError(
+                    f"Multiple Python scripts found in {path}. "
+                    f"Please specify the script file directly."
+                )
+        base_path = path
+    else:
+        raise FileNotFoundError(f"Path not found: {path}")
+
+    if not script_path.exists():
+        raise FileNotFoundError(f"Dataset script not found: {script_path}")
+
+    # Dynamically import the module
+    module_name = script_path.stem
+    spec = importlib.util.spec_from_file_location(module_name, script_path)
+    module = importlib.util.module_from_spec(spec)
+
+    # Register the module in sys.modules so datasets library can find it
+    # This is necessary because datasets tries to re-import the module later
+    sys.modules[module_name] = module
+
+    # Add the script's directory to sys.path for relative imports
+    if str(script_path.parent) not in sys.path:
+        sys.path.insert(0, str(script_path.parent))
+
+    spec.loader.exec_module(module)
+
+    # Find the builder class
+    builder_cls = _find_builder_class(module)
+
+    # Determine the config to use
+    if config_name is not None:
+        # Find the matching config
+        config = None
+        for cfg in builder_cls.BUILDER_CONFIGS:
+            if cfg.name == config_name:
+                config = cfg
+                break
+        if config is None:
+            available = [cfg.name for cfg in builder_cls.BUILDER_CONFIGS]
+            raise ValueError(
+                f"Config '{config_name}' not found. Available configs: {available}"
+            )
+    elif builder_cls.BUILDER_CONFIGS:
+        # Use default config
+        default_name = getattr(builder_cls, 'DEFAULT_CONFIG_NAME', None)
+        if default_name:
+            config = next(
+                (cfg for cfg in builder_cls.BUILDER_CONFIGS if cfg.name == default_name),
+                builder_cls.BUILDER_CONFIGS[0]
+            )
+        else:
+            config = builder_cls.BUILDER_CONFIGS[0]
+    else:
+        config = None
+
+    # Instantiate the builder
+    builder = builder_cls(
+        config_name=config.name if config else None,
+        data_dir=str(base_path),
+        **kwargs
+    )
+
+    return builder
+
+
+def load_dataset_from_path(
+    path: Union[str, Path],
+    config_name: Optional[str] = None,
+    split: Optional[str] = None,
+    **kwargs
+) -> Union[Dataset, dict]:
+    """Load a dataset from a local path containing a dataset script.
+
+    This is a convenience function that combines load_dataset_builder_from_path
+    with download_and_prepare and as_dataset calls.
+
+    Args:
+        path: Path to the directory containing the dataset script.
+        config_name: Optional name of the builder configuration to use.
+        split: Optional split name to load. If None, returns a dict of all splits.
+        **kwargs: Additional keyword arguments passed to the builder constructor.
+
+    Returns:
+        A Dataset object if split is specified, otherwise a dict mapping
+        split names to Dataset objects.
+
+    Example:
+        >>> dataset = load_dataset_from_path("scripts/plasticc", split="train")
+        >>> print(len(dataset))
+    """
+    builder = load_dataset_builder_from_path(path, config_name, **kwargs)
+    builder.download_and_prepare()
+    return builder.as_dataset(split=split)
 
 def _file_to_catalog(filename: str, keys: List[str]):
     with h5py.File(filename, 'r') as data:

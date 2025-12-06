@@ -1,12 +1,17 @@
-# NOTE: use datasets==3.6 for this
+# NOTE: Updated for datasets 4.x compatibility
 # Run this first
 # uv pip install -r requirements.txt
 # ./download_desi_hsc.sh
-from datasets import load_dataset_builder, concatenate_datasets
-from mmu.utils import get_catalog
+import sys
+from pathlib import Path
+from datasets import concatenate_datasets
+
+# Add parent directory to path to import mmu utils
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from mmu.utils import get_catalog, load_dataset_builder_from_path
 
 # Load the dataset descriptions from local copy of the data
-desi = load_dataset_builder("data/MultimodalUniverse/v1/desi", trust_remote_code=True)
+desi = load_dataset_builder_from_path("data/MultimodalUniverse/v1/desi")
 desi.download_and_prepare()
 
 desi_catalog = get_catalog(desi)
