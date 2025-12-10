@@ -121,7 +121,6 @@ def compare_tables(table1, table2, label1="Table 1", label2="Table 2"):
                 if columns_equal:
                     print("OK")
                 else:
-                    import ipdb; ipdb.set_trace(context=20)
                     print("MISMATCH")
                     issues.append({
                         "type": "column_values",
@@ -179,7 +178,6 @@ Examples:
     print(f"Loading second table from: {args.file2}")
     table2 = load_table(args.file2)
 
-    import ipdb; ipdb.set_trace(context=20)
     # Flatten struct columns for comparison
     print("Flattening struct columns...")
     table1 = flatten_struct_columns(table1)

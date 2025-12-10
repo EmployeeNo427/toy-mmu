@@ -1,6 +1,4 @@
-"""
-BTSbotTransformer: Clean class-based transformation from HDF5 to PyArrow tables.
-"""
+"""BTSbot HDF5 to PyArrow transformer."""
 
 import pyarrow as pa
 import numpy as np
@@ -8,9 +6,7 @@ from catalog_functions.utils import BaseTransformer
 
 
 class BTSbotTransformer(BaseTransformer):
-    """Transforms BTSbot HDF5 files to PyArrow tables with proper schema."""
-
-    # Feature group definitions from btsbot.py
+    """Transforms BTSbot HDF5 files to PyArrow tables."""
     FLOAT_FEATURES = [
         "jd",
         "diffmaglim",
@@ -92,6 +88,12 @@ class BTSbotTransformer(BaseTransformer):
         "nmtchps",
         "nnotdet",
         "N",
+        "healpix",
+    ]
+
+    DOUBLE_FEATURES = [
+        "ra",
+        "dec",
     ]
 
     BOOL_FEATURES = [
@@ -107,11 +109,9 @@ class BTSbotTransformer(BaseTransformer):
         "split",
     ]
 
-    IMAGE_SIZE = 63
     VIEWS = ["science", "reference", "difference"]
 
     def create_schema(self):
-        """Create the output PyArrow schema."""
         fields = []
 
         # Image data as separate columns (lists since each object has 3 views)
@@ -120,38 +120,21 @@ class BTSbotTransformer(BaseTransformer):
         fields.append(pa.field("array", pa.list_(pa.list_(pa.list_(pa.float32())))))  # list of 2D arrays
         fields.append(pa.field("scale", pa.list_(pa.float32())))
 
-        # Add all float features
         for f in self.FLOAT_FEATURES:
             fields.append(pa.field(f, pa.float32()))
-
-        # Add all int features (note: object_id is int64 in BTSbot)
+        for f in self.DOUBLE_FEATURES:
+            fields.append(pa.field(f, pa.float64()))
         for f in self.INT_FEATURES:
             fields.append(pa.field(f, pa.int64()))
-
-        # Add all boolean features
         for f in self.BOOL_FEATURES:
             fields.append(pa.field(f, pa.bool_()))
-
-        # Add all string features
         for f in self.STRING_FEATURES:
             fields.append(pa.field(f, pa.string()))
-
-        # Object ID (int64 in BTSbot)
         fields.append(pa.field("object_id", pa.int64()))
 
         return pa.schema(fields)
 
     def dataset_to_table(self, data):
-        """
-        Convert HDF5 dataset to PyArrow table.
-
-        Args:
-            data: HDF5 file or dict of datasets
-
-        Returns:
-            pa.Table: Transformed Arrow table
-        """
-        # Dictionary to hold all columns
         columns = {}
         n_objects = len(data["object_id"][:])
 
@@ -174,30 +157,18 @@ class BTSbotTransformer(BaseTransformer):
         # 2. Add float features
         for f in self.FLOAT_FEATURES:
             columns[f] = pa.array(data[f][:].astype(np.float32))
-
-        # 3. Add int features
+        for f in self.DOUBLE_FEATURES:
+            columns[f] = pa.array(data[f][:].astype(np.float64))
         for f in self.INT_FEATURES:
             columns[f] = pa.array(data[f][:].astype(np.int64))
-
-        # 4. Add boolean features
         for f in self.BOOL_FEATURES:
             columns[f] = pa.array(data[f][:].astype(bool))
-
-        # 5. Add string features
         for f in self.STRING_FEATURES:
             str_data = data[f][:]
-            columns[f] = pa.array(
-                [
-                    s.decode("utf-8") if isinstance(s, bytes) else str(s)
-                    for s in str_data
-                ]
-            )
-
-        # 6. Add object_id (int64 in BTSbot)
+            columns[f] = pa.array([
+                s.decode("utf-8") if isinstance(s, bytes) else str(s)
+                for s in str_data
+            ])
         columns["object_id"] = pa.array(data["object_id"][:].astype(np.int64))
 
-        # Create table with schema
-        schema = self.create_schema()
-        table = pa.table(columns, schema=schema)
-
-        return table
+        return pa.table(columns, schema=self.create_schema())
